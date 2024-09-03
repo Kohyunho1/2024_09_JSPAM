@@ -11,18 +11,32 @@ import jakarta.servlet.http.HttpServletResponse;
 @WebServlet("/printDan")
 public class PrintDanServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-
+       
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		response.setContentType("text/html; charset=UTF-8;");
 		
 		String inputDan = request.getParameter("dan");
+		String inputLimit = request.getParameter("limit");
 		String inputColor = request.getParameter("color");
 		
-		int dan = Integer.parseInt(inputDan);
+		if (inputDan == null || inputDan.trim().length() == 0) {
+			inputDan = "1";
+		}
 		
-		response.getWriter().append("<div style='color:" + inputColor + ";'>== " + dan + "단 ==</div>");
-		for (int i = 1; i <= 9; i++) {
-			response.getWriter().append("<div>" + dan + " * " + i + " = " + (dan * i) + "</div>");
+		if (inputLimit == null) {
+			inputLimit = "1";
+		}
+		
+		if (inputColor == null) {
+			inputColor = "black";
+		}
+		
+		int dan = Integer.parseInt(inputDan);
+		int limit = Integer.parseInt(inputLimit);
+		
+		response.getWriter().append(String.format("<div style='color:%s;'>== %d단 ==</div><br />", inputColor, dan));
+		for (int i = 1; i <= limit; i++) {
+			response.getWriter().append(String.format("<div style=\"color:%s;\">%d * %d = %d</div>", inputColor, dan, i, dan * i));
 		}
 	}
 }
