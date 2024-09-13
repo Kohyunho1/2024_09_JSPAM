@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Map;
 
 import com.koreaIT.jsp.am.config.Config;
 import com.koreaIT.jsp.am.util.DBUtil;
@@ -14,18 +15,18 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
-@WebServlet("/member/doJoin")
-public class MemberDoJoinServlet extends HttpServlet {
+@WebServlet("/member/doLogin")
+public class MemberDoLoginServlet extends HttpServlet {
 	private static final long serialVersionUID = 1L;
-			
+
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		
 		response.setContentType("text/html; charset=UTF-8;");
 
 		String loginId = request.getParameter("loginId");
 		String loginPw = request.getParameter("loginPw");
-		String name = request.getParameter("name");
 		
 		Connection connection = null;
 		
@@ -34,27 +35,25 @@ public class MemberDoJoinServlet extends HttpServlet {
 			connection = DriverManager.getConnection(Config.getDBUrl(), Config.getDBUsr(), Config.getDBUsrPw());
 
 			SecSql sql = new SecSql();
-			sql.append("SELECT COUNT(id) FROM `member`");
+			sql.append("SELECT * FROM `member`");
 			sql.append("WHERE loginId = ?", loginId);
 			
-			int loginIdDupChk = DBUtil.selectRowIntValue(connection, sql);
+			Map<String, Object> memberMap = DBUtil.selectRow(connection, sql);
 			
-			if (loginIdDupChk == 1) {
-				response.getWriter().append(String.format("<script>alert('[ %s ] 은(는) 이미 사용중인 아이디입니다'); history.back();</script>", loginId));
+			if (memberMap.isEmpty()) {
+				response.getWriter().append(String.format("<script>alert('[ %s ] 은(는) 존재하지 않는 아이디입니다'); history.back();</script>", loginId));
 				return;
 			}
 			
-			sql = new SecSql();
-			sql.append("INSERT INTO `member`");
-			sql.append("SET regDate = NOW()");
-			sql.append(", updateDate = NOW()");
-			sql.append(", loginId = ?", loginId);
-			sql.append(", loginPw = ?", loginPw);
-			sql.append(", `name` = ?", name);
+			if (memberMap.get("loginPw").equals(loginPw) == false) {
+				response.getWriter().append("<script>alert('비밀번호가 일치하지 않습니다'); history.back();</script>");
+				return;
+			}
 			
-			DBUtil.insert(connection, sql);
+			HttpSession session = request.getSession();
+			session.setAttribute("loginedMemberId", memberMap.get("id"));
 			
-			response.getWriter().append(String.format("<script>alert('[ %s ] 님의 가입을 환영합니다~'); location.replace('../home/main');</script>", loginId));
+			response.getWriter().append(String.format("<script>alert('[ %s ] 님 환영합니다~'); location.replace('../home/main');</script>", loginId));
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
